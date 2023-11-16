@@ -5,22 +5,22 @@ locals {
     managed-by  = "terraform"
     environment = "lifi"
     version     = "1.0"
-  }  
+  }
 }
 
 #--------------------------------
 # VPC
 #--------------------------------
 module "lifi-vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+  source  = "terraform-aws-modules/vpc/aws"
   version = "5.1.2"
 
   name = "${local.project_name}-vpc"
   cidr = var.vpc-subnet-cidr
 
-  azs             = data.aws_availability_zones.available.names
-  private_subnets = var.private-subnet-cidr
-  public_subnets  = var.public-subnet-cidr
+  azs              = data.aws_availability_zones.available.names
+  private_subnets  = var.private-subnet-cidr
+  public_subnets   = var.public-subnet-cidr
   database_subnets = var.db-subnet-cidr
 
   create_database_subnet_group           = true
@@ -29,8 +29,7 @@ module "lifi-vpc" {
 
   enable_dns_hostnames = true
   enable_dns_support   = true
-  enable_nat_gateway = true
-  # enable_vpn_gateway = true
+  enable_nat_gateway   = true
 
   tags = local.tags
 }
@@ -45,7 +44,7 @@ module "lifi-eks" {
   cluster_name    = "${local.project_name}-eks"
   cluster_version = "1.27"
 
-  cluster_endpoint_public_access  = true
+  cluster_endpoint_public_access = true
 
   cluster_addons = {
     coredns = {
@@ -59,8 +58,8 @@ module "lifi-eks" {
     }
   }
 
-  vpc_id                   = module.lifi-vpc.vpc_id
-  subnet_ids               = module.lifi-vpc.private_subnets
+  vpc_id     = module.lifi-vpc.vpc_id
+  subnet_ids = module.lifi-vpc.private_subnets
 
   eks_managed_node_groups = {
     blue = {}
@@ -74,34 +73,16 @@ module "lifi-eks" {
     }
   }
 
-  # aws-auth configmap
   manage_aws_auth_configmap = true
 
-  # aws_auth_roles = [
-  #   {
-  #     rolearn  = "arn:aws:iam::66666666666:role/role1"
-  #     username = "role1"
-  #     groups   = ["system:masters"]
-  #   },
-  # ]
-
+  #manage user praise
   aws_auth_users = [
     {
       userarn  = "arn:aws:iam::487437956131:user/praise"
       username = "praise"
       groups   = ["system:masters"]
     },
-    # {
-    #   userarn  = "arn:aws:iam::66666666666:user/user2"
-    #   username = "user2"
-    #   groups   = ["system:masters"]
-    # },
   ]
-
-  # aws_auth_accounts = [
-  #   "777777777777",
-  #   "888888888888",
-  # ]
 
   tags = local.tags
 }
@@ -119,20 +100,21 @@ resource "null_resource" "update_kubeconfig" {
 # RDS
 #--------------------------------
 locals {
-  password   = length(var.rds_password) > 0 ? var.rds_password : random_string.password.result
-  username   = length(var.rds_username) > 0 ? var.rds_username : random_string.username.result
+  password = length(var.rds_password) > 0 ? var.rds_password : random_string.password.result
+  username = length(var.rds_username) > 0 ? var.rds_username : random_string.username.result
 }
 
 resource "random_string" "username" {
   length  = 10
   special = false
-  numeric  = false
+  numeric = false
 }
 
 resource "random_string" "password" {
   length  = 20
   special = false
 }
+
 # allow all inbound on 3306 and all outbound
 resource "aws_security_group" "rds_sg" {
   name        = "rds_sg"
@@ -154,7 +136,7 @@ resource "aws_security_group" "rds_sg" {
 }
 
 module "lifi-rds" {
-  source = "terraform-aws-modules/rds/aws"
+  source  = "terraform-aws-modules/rds/aws"
   version = "6.3.0"
 
   identifier = "${local.project_name}-rds"
@@ -169,8 +151,7 @@ module "lifi-rds" {
   password = local.password
   port     = var.rds_port
 
-  manage_master_user_password = true 
-  # iam_database_authentication_enabled = true
+  manage_master_user_password = true
 
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
@@ -185,7 +166,8 @@ module "lifi-rds" {
   # DB subnet group
   create_db_subnet_group = false #created in vpc already
   subnet_ids             = module.lifi-vpc.database_subnets
- publicly_accessible = true
+  publicly_accessible    = true #TD
+
   # DB parameter group
   family = "mysql5.7"
 
@@ -196,34 +178,6 @@ module "lifi-rds" {
   deletion_protection = false #true
 
   tags = local.tags
-
-  # parameters = [
-  #   {
-  #     name  = "character_set_client"
-  #     value = "utf8mb4"
-  #   },
-  #   {
-  #     name  = "character_set_server"
-  #     value = "utf8mb4"
-  #   }
-  # ]
-
-  # options = [
-  #   {
-  #     option_name = "MARIADB_AUDIT_PLUGIN"
-
-  #     option_settings = [
-  #       {
-  #         name  = "SERVER_AUDIT_EVENTS"
-  #         value = "CONNECT"
-  #       },
-  #       {
-  #         name  = "SERVER_AUDIT_FILE_ROTATIONS"
-  #         value = "37"
-  #       },
-  #     ]
-  #   },
-  # ]
 }
 
 #--------------------------------
@@ -234,7 +188,6 @@ module "lifi-ecr" {
 
   repository_name = "${local.project_name}-ecr"
 
-  # repository_read_write_access_arns = ["arn:aws:iam::012345678901:role/terraform"]
   repository_lifecycle_policy = jsonencode({
     rules = [
       {
@@ -261,15 +214,15 @@ module "lifi-ecr" {
 #--------------------------------
 module "remote-state" {
   source = "./modules/remote-state"
-  region = "eu-west-1" #local.region
+  region = "eu-west-1"
 }
 
 #--------------------------------
 # PROMETHEUS
 #--------------------------------
 module "kube-prometheus-stack" {
-  source = "./modules/kube-prometheus-stack"
-  prometheus-version = "53.0.0"
+  source               = "./modules/kube-prometheus-stack"
+  prometheus-version   = "53.0.0"
   prometheus-namespace = "kube-prometheus-stack"
 }
 
@@ -277,117 +230,7 @@ module "kube-prometheus-stack" {
 # FLUENTBIT - CLOUDWATCH
 #--------------------------------
 module "lifi-fluentbit-cloudwatch" {
-  source = "./modules/fluentbit"
-  fluentbit-version = "0.28.0"
+  source              = "./modules/fluentbit"
+  fluentbit-version   = "0.28.0"
   fluentbit-namespace = "fluentbit"
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# locals {
-#   name = "notejam"
-#   tags = {
-#     Terraform = "true"
-#     Environment = "dev"
-#   }
-# }
-
-# module "notejam_vpc" {
-#   source          = "terraform-aws-modules/vpc/aws"
-#   name            = "notejam-vpc"
-#   cidr            = "10.0.0.0/16"
-#   azs             = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
-#   public_subnets  = var.public-subnets
-
-#   enable_nat_gateway = false #read
-#   enable_vpn_gateway = false
-
-#   tags = local.tags
-# }
-
-# module "notejam_eks" {
-#   source          = "terraform-aws-modules/eks/aws"
-#   cluster_name    = var.cluster_name
-#   cluster_version = "1.21"
-#   subnet_ids      = module.notejam_vpc.public_subnets
-#   vpc_id          = module.notejam_vpc.vpc_id
-
-
-#   # EKS Managed Node Group(s)
-#   eks_managed_node_group_defaults = {
-#     ami_type               = "AL2_x86_64"
-#     disk_size              = 20
-#   }
-
-#   eks_managed_node_groups = {
-#     blue = {}
-#     green = {
-#       min_size     = 1
-#       max_size     = 3
-#       desired_size = 1
-
-#       instance_types = ["t3.medium"]
-#       capacity_type  = "ON_DEMAND"
-#     }
-#   }
-#   tags = local.tags
-# }
-
-# # run 'aws eks update-kubeconfig ...' locally and update local kube config
-# resource "null_resource" "update_kubeconfig" {
-#   depends_on = [module.notejam_eks]
-
-#   provisioner "local-exec" {
-#     command = "aws eks update-kubeconfig --name ${var.cluster_name} --region ${var.aws_region}"
-#   }
-# }
-
-# module "ecr" {
-#   source = "cloudposse/ecr/aws"
-#   name   = "notejam-ecr"
-#   tags   = local.tags
-# }
-
-
-
-
-################# AUTOMATING REMOTE STATE LOCKING
-# data "template_file" "remote-state" {
-#   template = "${file("./scripts/remote-state.tpl")}"
-#   vars = {
-#     s3-bucket      = module.remote-state-locking.bucket_name
-#     dynamodb_table = module.remote-state-locking.dynamodb_table
-#   }
-# }
-# resource "null_resource" "remote-state-locks" {
-#   depends_on = [module.remote-state-locking, data.template_file.remote-state]
-#   provisioner "local-exec" {
-#     command = "sleep 20;cat > backend.tf <<EOL\n${data.template_file.remote-state.rendered}"
-#   }
-# }
-
-
-# module "remote-state-locking" {
-#   source = "./modules/remote-state-locking"
-#   region = var.region
-# }

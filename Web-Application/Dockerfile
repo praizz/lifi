@@ -6,7 +6,7 @@ ARG RDS_USERNAME
 ARG RDS_PASSWORD
 ARG RDS_PORT
 
-# Set environment variables into the image, so it can be omitted in /k8s directory
+# Bake environment variables into the image, so it can be omitted in /k8s directory
 ENV RDS_HOSTNAME=${RDS_HOSTNAME}
 ENV RDS_USERNAME=${RDS_USERNAME}
 ENV RDS_PASSWORD=${RDS_PASSWORD}
@@ -22,7 +22,4 @@ RUN npm install
 
 COPY . .
 
-# RUN node /app/db.js 
-
 CMD ["npm", "start"]
-

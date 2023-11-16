@@ -1,22 +1,5 @@
 variable "region" {
-
+  type        = string
+  description = "the AWS region to create all the resources"
+  default     = "eu-west-1"
 }
-
-# variable "versioning" {
-#   default     = true
-#   description = "enables versioning for objects in the S3 bucket"
-#   type        = bool
-# }
-
-
-# variable "force_destroy" {
-#   description = "Whether to allow a forceful destruction of this bucket"
-#   default     = false
-#   type        = bool
-# }
-
-# variable "create" {
-#   type        = bool
-#   default     = true
-# }
-

@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 
 const connection = require('./db');
+
 // The status endpoint
 app.get('/status', (req, res) => res.send({status: "I'm alive!"}));
 
@@ -17,7 +18,7 @@ app.post('/data', (req, res) => {
             });
         });
     } else {
-        console.log('Missing a parameter');
+        console.log('Missing a parameter!');
     }
 });
 

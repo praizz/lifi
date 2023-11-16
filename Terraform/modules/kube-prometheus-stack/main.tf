@@ -4,7 +4,6 @@ resource "kubernetes_namespace" "this" {
   }
 }
 
-
 resource "helm_release" "kube-prometheus-stack" {
   name       = "kube-prometheus-stack"
   namespace  = kubernetes_namespace.this.metadata[0].name

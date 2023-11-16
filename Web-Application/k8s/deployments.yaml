@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: lifi-nodeapp
-        image: $ECR_REGISTRY/$ECR_REPOSITORY:dev-${{ github.run_number }}
+        image: $ECR_REGISTRY/$ECR_REPOSITORY:dev-${{ github.run_number }} #patched from github action
         ports:
         - containerPort: 3001
         resources:

@@ -2,7 +2,7 @@
 terraform.tfstate
 *.tfstate*
 terraform.tfvars
-
+.terraform.lock.hcl
 **/.terraform/*
 .idea*
 # .tfstate files
@@ -10,5 +10,4 @@ terraform.tfvars
 *.tfstate.*
 
 config-map-aws-auth.yaml
-
 kubeconfig
