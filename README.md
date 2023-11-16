@@ -1,67 +1,126 @@
-# LIFI WEB APPLICATION
+# LIFI: Infrastructure and Web Application
 
-This is a simple node app using the express framework and mysql library. The entrypoint to this application is the index.js.
+## Overview
 
-This project has 3 endpoints;
-- /status GET ; This endpoint lets you know that the application is alive.
-- /data POST ; This endpoint takes in 3 parameters namely username, email, age and stores the data in an RDS database we have deployed with Terraform and configured in db.js file
-- /users GET ; this endpoint connects to the database and fetches all data
+Welcome to LIFI Infrastructure and Web Application Project, a simple project structure combining a Node.js application and Terraform infrastructure. This repository is designed to showcase the principles of efficient infrastructure as code (IaC) and modern web application development.
 
-This Simple Web Aplication is containerized with Docker and deployed into Kubernetes. The Dockerfile can be found in the root modul ewhile the Kubernets mnanifests can be found in the /K8s directory in the root module.
+## Project Structure
 
-Deploying this application to Kubernetes is managed with Github Actions, found in `.github/workflows/.deploy-webapp.yaml`
+### 1. Terraform Infrastructure (Terraform)
 
-## SETTING UP THE PROJECT - WEB APPLICATION 
+The `Terraform` directory holds the IaC scripts to deploy and manage the project's infrastructure.
 
+```
+Terraform/
+|-- modules/
+|-- main.tf
+|-- variables.tf
+|-- providers.tf
+|-- ... (other Terraform scripts)
+```
+#### Setting Up Remote State Locally
+To manage remote state, navigate to the modules/remote-state directory. This directory is responsible for configuring the Terraform backend and automates the population of the backend.tf file with details from the S3 bucket.
+- Initialize the Terraform workspace for the remote state : `terraform init`
+- Apply the infrastructure changes specifically for remote state by running: `terraform apply -target=module.remote-state`
+- This command not only instantiates the remote state but also generates and populates the `backend.tf` file.
+- After the backend.tf file is populated, reinitialize Terraform to use the newly configured state: `terraform init`
+##### Configuring Remote State Deletion Protection
+Now that remote state is configured, let's take steps to prevent accidental deletion.
+- Remove Module State from Terraform Knowledge : `terraform state list` and then `terraform state rm module.remote-state`
+- In the main.tf file, comment out the instance of the Terraform remote-state module. This step ensures that the module won't be processed in future Terraform operations
 
-## SETTING UP THE PROJECT - INFRASTRUCTURE AS CODE
-
-
-# LIFI INFRASTRUCTURE AS CODE
-The IaC choice for this infrastructure is Terraform 
-
-The entrypoint to terraform is the main.tf file. Within this file, I deployed AWS Virtual Private Cloud (VPC), AWS Elastic Kubernetes Service (EKS), and AWS Elastic Container Registry (ECR), AWS Relational Database Service (RDS), Remote State with S3, Prometheus and Fluentbit with Cloudwatch amongst many other resources. 
-
-All of these services work together in ensuring a fully functional kubernetes cluster. 
-Some of these modules were deployed out of the bnox with aws manages modules on terraform registry, while some others were created in the /modules directory with specific configurations.
-
-This module utilizes Remote State to store our terraform state as a key in an s3 bucket. This is found in /modules/remote-state
-Monitoring was also setup with prometheus through the kube-prometheu-stack hekm template. This is found in /modules/kube-prometheus-stack
-Logging to Cloudwatch was setup with Fluentbot as a lightweight logshipper and an output of cloudwatch log group. This is found in /modules/fluentbit
-
-
-
-
-## IMPROVEMENTS
-As this is a simple solution, a couple of improvements neeed to be factored in when implementing this in production. Few of which I would highlight below:
-- Implement Gitops with a tool of choice e.g ArgoCD to manage Kubernetes resources like Prometheus, FluentBit etc
-- Configure tighter security for RDS Module and implement Deletion Protection 
-- Manage User Authentication to EKS as a separate Module, hence keeping the EKS module lean
-- Manage ingress with reverse proxy / loadbalancer
-- Configure RBAC
-- Tight Security group and vpc access instead of making RDS public
+#### Setting Up Terraform Infrastructure Locally
+- Navigate to the Terraform directory.
+- Initialize the Terraform workspace: `terraform init` using remote backend generated above.
+- Run a `terraform plan` to look through proposed changes
+- Apply the infrastructure changes: `terraform apply`
+- Destroy the infrastructure (if needed): `terraform destroy` & then manually delete the remote state bucket once terraform destroy is complete and successful.
 
 
+### 2. Web Application (`Web-Application`)
 
-# CICD WITH GITHUB ACTIONS
-There are two workflows files deploying the terraform infrastructure as well as the web application respectiely.
-To configure the Variables for the Github Actions, some secrets have been reference that need to be populated withinGithub settings
-- AWS_ACCESS_KEY_ID; this is used to authenticate the AWS account 
-- AWS_SECRET_ACCESS_KEY :this is used to authenticate into the aws account
-- RDS_HOSTNAME; this is used to deploy the webapp
+The `Web-Application` directory contains the source code for the Node.js application.
+
+```
+Web-Application/
+|-- k8s/
+|-- index.js
+|-- db.js
+|-- ... (other application files)
+```
+
+#### Setting Up Locally
+- Navigate to the Web-Application directory
+- Install dependencies: npm install
+- Setup the local .env file and put in the RDS credentials generated from Terraform and stored in AWS Secret Manager
+- Start the application: npm start
+- Access the application at http://localhost:3001 and access the respective endpoints
+
+
+### 3. GitHub Actions Pipeline (`.github/workflows`) 
+
+This project utilizes GitHub Actions to automate the CI/CD pipeline.
+
+```
+.github/workflows/
+|-- .deploy-terraform.yaml
+|-- .deploy-webapp.yaml
+```
+
+#### Pipeline Workflow
+On Push (main branch), both pipelines are triggered, 
+- The terraform workflow initializes, plans and applies the terraform infrastructure
+- The webapp workflow, builds the docker image, pushes it to ECR and deploys the web application to Kubernetes.
+
+#### Configuring Pipeline Secrets
+For optimal functionality, specific secrets are necessary for each pipeline and are securely stored in the GitHub repository settings. Ensure the following secrets are configured:
+- AWS_ACCESS_KEY_ID
+- AWS_SECRET_ACCESS_KEY
+Note: These secrets below are populated after Terraform creates the required resources. They are crucial for the web application deployment, not the Terraform workflow.
+- ECR_REGISTRY
+- RDS_HOSTNAME
 - RDS_USERNAME
 - RDS_PASSWORD
+- RDS_PORT
+These secrets enable secure authentication and communication with various services, empowering the pipelines to execute seamlessly. Please take care to manage and update these secrets responsibly.
 
 
-## SETTING UP THE PROJECT
-Seeing as the entirety of this project is divided into the web application and theinfrastructure, so is the deployment.
-### To Deploy Terraform
-The secrets mentioned above need to be configured, and once they are the workflow .deply-terraform can be triggered to provision our infrastructure on AWS
-Similarly, to deploy the web app, the workflow .deploy-web-app must be triggered to build, push and deploy our node app into kubernetes.
+## Deployed Terraform Modules
+1. Amazon EKS (Elastic Kubernetes Service): This provides a managed Kubernetes service for deploying, managing, and scaling containerized applications.
+2. Amazon VPC (Virtual Private Cloud): This creates a logically isolated section of the AWS Cloud where you can launch AWS resources.
+3. Amazon RDS (Relational Database Service): This manages the MySQL relational database that the Node App writes to.
+4. Amazon ECR (Elastic Container Registry): This provides a fully managed Docker container registry for storing, managing, and deploying Docker container images within AWS.
+5. Fluent Bit and Amazon CloudWatch for Logging: This collects logs from various sources and forwards them to Amazon CloudWatch for centralized logging and analysis.Details on this are in the Terraform/modules/fluentbit/ directory
+6. Prometheus for Monitoring: This monitors and alerts on infrastructure and application performance metrics in a Kubernetes environment.
+These carefully chosen modules cater to various aspects of the infrastructure, ensuring a well-rounded and scalable solution
 
-Once the web app is deployed into kubernetes, we can test our endpoints by accessing the loadbalancer endpoint. The Kubernetes manifest deploys a service of type loadbalancer that provisions a classic loadbalancer on AWS for the sake of testing
 
+## Proposed Enhancements
+While the current solution provides a solid foundation, several improvements should be considered for a production-grade implementation. Key enhancements include:
+- Implement GitOps Workflow: This streamlines the kubnernetes resource management, by integrating a GitOps tool like ArgoCD to automate and synchronize deployments for Kubernetes resources such as Prometheus and FluentBit etc
+- Strengthen Security for RDS Module: Configure Deletion Protection for RDS instances, Implement more granular security controls and encryption measures for data at rest and in transit.
+- Modularize User Authentication for EKS: Manage user authentication as a separate module, allowing for better scalability and maintainability of the EKS module, Also Configure RBAC policies to restrict access based on user roles and responsibilities.
+- Implement Ingress with Reverse Proxy / Load Balancer: Implement a reverse proxy or load balancer to manage ingress, improving routing and load distribution.
+- Tighten Security Group and VPC Access for RDS: Avoid making RDS public and configure security groups and VPC access rules to allow only necessary communication
+- Security: Enhance security by implementing network policies, encryption at rest, and ensuring IAM roles have the principle of least privilege.
+- Implement Image Scanning: Integrate an image scanning tool into the CI/CD pipeline to identify and mitigate vulnerabilities in container images.
+
+These proposed enhancements collectively aim to bolster the security, scalability, and maintainability of the infrastructure when transitioning to a production environment.
+
+## Testing the Deployed Web Application
+The deployed web application exposes three endpoints for testing purposes:
+- Status Endpoint (/status - GET): Use this endpoint to verify the operational status of the application.
+Example: GET http://<external-ip>/status
+- Data Endpoint (/data - POST): This endpoint accepts three parameters - username, email, and age.
+It stores the provided data in the RDS database deployed using Terraform above and configured in the db.js file.
+Example: POST http://<external-ip>/data with parameters passed in as query parameters.
+- Users Endpoint (/users - GET): Retrieve all data from the connected database using this endpoint.
+Example: GET http://<external-ip>/users
+Note: Since deployment was done using a Kubernetes service of type LoadBalancer, utilize the external IP assigned to the service.
+
+Testing can be conducted using Postman or any preferred testing tool
 
 #### References
 https://stackabuse.com/using-aws-rds-with-node-js-and-express-js/
 https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create-deploy-nodejs.rds.html
+
