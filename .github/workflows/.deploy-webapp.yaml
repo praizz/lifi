@@ -1,0 +1,61 @@
+name: Build and Deploy to EKS
+
+on: 
+  push: 
+    branches: 
+      - dev
+      - main
+
+env:
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+  KUBE_CLUSTER_NAME: ${{ secrets.KUBE_CLUSTER_NAME }}
+  ECR_REPOSITORY: "lifi-ecr"
+  AWS_REGION: eu-west-1
+
+jobs: 
+  build: 
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}      
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR 
+      env: 
+        IMAGE_TAG: dev-${{ github.run_number }}
+        RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}
+        RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
+        RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
+        RDS_PORT: ${{ secrets.RDS_PORT }}
+      run: |
+        # docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        # docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+        docker build \
+            --build-arg RDS_HOSTNAME=$RDS_HOSTNAME \
+            --build-arg RDS_USERNAME=$RDS_USERNAME \
+            --build-arg RDS_PASSWORD=$RDS_PASSWORD \
+            --build-arg RDS_PORT=$RDS_PORT \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . 
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Deploy to Kubernetes
+      env: 
+        IMAGE_TAG: dev-${{ github.run_number }}    
+      run: | 
+        aws eks update-kubeconfig --name $KUBE_CLUSTER_NAME --region $AWS_REGION
+        kubectl apply -f k8s/
+        kubectl set image deployment lifi-nodeapp lifi-nodeapp=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        

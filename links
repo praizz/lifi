@@ -1,0 +1,63 @@
+https://stackabuse.com/using-aws-rds-with-node-js-and-express-js/
+
+https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create-deploy-nodejs.rds.html
+
+
+
+
+
+
+Terraform codebase
+- create eks, vpc, security groups
+- create rds, security groups
+- helm with prometheus & grafana
+- cloudwatch logging with fluentbit
+- s3 & dynamo db, remote state
+- ecr for the nodejs app
+
+
+cicd
+- terraform init, apply 
+- terraform destroy
+- build, test and deploy nodejs apply
+
+webapp
+- nodejs express app
+k8s directory for deployment & app
+
+
+
+dockerfile
+readme
+
+
+
+Todo
+Separate AWS Auth from being managed through 
+Manage Prometheus, fluentbit with Argocd
+set deletion protection on rds and more tight security group
+
+praise-Todo
+- read extensively about the vpc fields & networking
+- cloudflare vs nginx vs route53
+
+
+
+ecr-repository = "487437956131.dkr.ecr.eu-west-1.amazonaws.com/lifi-ecr"
+rds_master_db_instance_address = "lifi-rds.cqr5uhal29yu.eu-west-1.rds.amazonaws.com"
+rds_master_db_instance_arn = "arn:aws:rds:eu-west-1:487437956131:db:lifi-rds"
+rds_master_db_instance_endpoint = "lifi-rds.cqr5uhal29yu.eu-west-1.rds.amazonaws.com:3306"
+rds_master_db_instance_name = "lifirds"
+
+
+
+
+curl -d '{"username":"praise", "email":"praise@gmail.com", "age":"27"}' -H "Content-Type: application/json" -X POST http://localhost:3001/data
+
+curl -X POST -H "Content-Type: application/json" -d '{"username": "testuser", "email": "test@example.com", "age": 25}' http://localhost:3001/data
+
+curl -X POST \
+  --data-urlencode "username=testuser" \
+  --data-urlencode "email=test@example.com" \
+  --data-urlencode "age=25" \
+  http://localhost:3001/data
