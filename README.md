@@ -82,6 +82,7 @@ Note: These secrets below are populated after Terraform creates the required res
 - RDS_USERNAME
 - RDS_PASSWORD
 - RDS_PORT
+
 These secrets enable secure authentication and communication with various services, empowering the pipelines to execute seamlessly. Please take care to manage and update these secrets responsibly.
 
 
@@ -92,6 +93,7 @@ These secrets enable secure authentication and communication with various servic
 4. Amazon ECR (Elastic Container Registry): This provides a fully managed Docker container registry for storing, managing, and deploying Docker container images within AWS.
 5. Fluent Bit and Amazon CloudWatch for Logging: This collects logs from various sources and forwards them to Amazon CloudWatch for centralized logging and analysis.Details on this are in the Terraform/modules/fluentbit/ directory
 6. Prometheus for Monitoring: This monitors and alerts on infrastructure and application performance metrics in a Kubernetes environment.
+
 These carefully chosen modules cater to various aspects of the infrastructure, ensuring a well-rounded and scalable solution
 
 
@@ -110,15 +112,16 @@ These proposed enhancements collectively aim to bolster the security, scalabilit
 ## Testing the Deployed Web Application
 The deployed web application exposes three endpoints for testing purposes:
 - Status Endpoint (/status - GET): Use this endpoint to verify the operational status of the application.
-Example: GET http://<external-ip>/status
+Example: GET http://`<external-ip>`/status
 - Data Endpoint (/data - POST): This endpoint accepts three parameters - username, email, and age.
 It stores the provided data in the RDS database deployed using Terraform above and configured in the db.js file.
-Example: POST http://<external-ip>/data with parameters passed in as query parameters.
+Example: POST http://`<external-ip>`/data with parameters passed in as query parameters.
 - Users Endpoint (/users - GET): Retrieve all data from the connected database using this endpoint.
-Example: GET http://<external-ip>/users
-Note: Since deployment was done using a Kubernetes service of type LoadBalancer, utilize the external IP assigned to the service.
+Example: GET http://`<external-ip>`/users
 
-Testing can be conducted using Postman or any preferred testing tool
+> Note: Since deployment was done using a Kubernetes service of type LoadBalancer, utilize the external IP assigned to the service.
+
+> Testing can be conducted using Postman or any preferred testing tool
 
 #### References
 https://stackabuse.com/using-aws-rds-with-node-js-and-express-js/
