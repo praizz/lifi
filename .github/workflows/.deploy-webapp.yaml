@@ -50,6 +50,7 @@ jobs:
             --build-arg RDS_PORT=$RDS_PORT \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . 
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      working-directory: Web-Application
 
     - name: Deploy to Kubernetes
       env: 
@@ -58,4 +59,5 @@ jobs:
         aws eks update-kubeconfig --name $KUBE_CLUSTER_NAME --region $AWS_REGION
         kubectl apply -f k8s/
         kubectl set image deployment lifi-nodeapp lifi-nodeapp=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      working-directory: Web-Application
         
