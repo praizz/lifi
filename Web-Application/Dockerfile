@@ -22,7 +22,7 @@ RUN npm install
 
 COPY . .
 
-RUN node /app/db.js 
+# RUN node /app/db.js 
 
 CMD ["npm", "start"]
 
